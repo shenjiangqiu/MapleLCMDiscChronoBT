@@ -68,10 +68,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define CORE  3
 
 namespace Minisat {
-
+extern std::chrono::nanoseconds total_work_time;
+extern decltype(std::chrono::steady_clock::now()) program_start_time;
+extern decltype(std::chrono::steady_clock::now()) program_end_time;
 //=================================================================================================
 // Solver -- the main class:
-
 class Solver {
 private:
     template<typename T>
@@ -104,7 +105,40 @@ public:
     //
     Solver();
     virtual ~Solver();
-
+    void print_size(std::ostream &os)
+    {
+        program_end_time=std::chrono::steady_clock::now();
+        total_work_time=program_end_time-program_start_time;
+        os << "clause_allocate_size " << ca.size() * sizeof(int) << "\n";
+        os << "model " << model.size() * sizeof(model[0]) << "\n";
+        os << "conflict " << conflict.size() * sizeof(conflict[0]) << "\n";
+        os << "clauses " << clauses.size() * sizeof(clauses[0]) << "\n";
+        os << "learnts_core " << learnts_core.size() * sizeof(learnts_core[0]) << "\n";
+        os << "activity_CHB " << activity_CHB.size() * sizeof(activity_CHB[0]) << "\n";
+        os << "watches_bin " << watches_bin.size() * sizeof(Watcher) << "\n";
+        os << "watches " << watches.size() * sizeof(Watcher) << "\n";
+        os << "assigns " << assigns.size() * sizeof(assigns[0]) << "\n";
+        os << "polarity " << polarity.size() * sizeof(polarity[0]) << "\n";
+        os << "decision " << decision.size() * sizeof(decision[0]) << "\n";
+        os << "trail " << trail.size() * sizeof(trail[0]) << "\n";
+        os << "trail_lim " << trail_lim.size() * sizeof(trail_lim[0]) << "\n";
+        os << "vardata " << vardata.size() * sizeof(vardata[0]) << "\n";
+        os << "assumptions " << assumptions.size() * sizeof(assumptions[0]) << "\n";
+        os << "total_Watchers: " << total_Watchers << "\n";
+        os << "total_act_watchers: " << total_act_watchers << "\n";
+        os << "total_indexs: " << total_indexs << "\n";
+        os << "time_find_conflict: " << time_find_conflict << "\n";
+        os << "total_find_conflict_length: " << total_find_conflict_length << "\n";
+        os << "total_find_conflict_allsize: " << total_find_conflict_allsize << "\n";
+        os << "total_propagation_time: " << total_duration.count() << "\n";
+        os << "total_work_time: "<< total_work_time.count()<<"\n";
+    }
+    unsigned long long total_Watchers = 0;
+    unsigned long long total_act_watchers = 0;
+    unsigned long long total_indexs = 0;
+    unsigned long long time_find_conflict = 0;
+    unsigned long long total_find_conflict_length = 0;
+    unsigned long long total_find_conflict_allsize = 0;
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -347,7 +381,18 @@ protected:
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, int level = 0, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-    CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
+    CRef     propagate_        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
+    std::chrono::nanoseconds total_duration;
+    CRef     propagate(){
+
+        auto start_time=std::chrono::steady_clock::now();
+        auto ref= propagate_();
+        auto end_time=std::chrono::steady_clock::now();
+        auto duration=end_time-start_time;
+        total_duration+=duration;
+        return ref;
+
+    }
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel, int& out_lbd);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?

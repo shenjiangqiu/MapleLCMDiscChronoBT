@@ -40,7 +40,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/Options.h"
 #include "core/Dimacs.h"
 #include "simp/SimpSolver.h"
-
+#include<chrono>
 using namespace Minisat;
 
 //=================================================================================================
@@ -50,14 +50,14 @@ void printStats(Solver& solver)
 {
     double cpu_time = cpuTime();
     double mem_used = memUsedPeak();
-    printf("c restarts              : %"PRIu64"\n", solver.starts);
-    printf("c duplicate learnts_cnf : %"PRIu64"\n", solver.duplicates_added_conflicts);
-    printf("c duplicate learnts_min : %"PRIu64"\n", solver.duplicates_added_minimization);
-    printf("c conflicts             : %-12"PRIu64"   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
-    printf("c decisions             : %-12"PRIu64"   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
-    printf("c propagations          : %-12"PRIu64"   (%.0f /sec)\n", solver.propagations, solver.propagations/cpu_time);
-    printf("c conflict literals     : %-12"PRIu64"   (%4.2f %% deleted)\n", solver.tot_literals, (solver.max_literals - solver.tot_literals)*100 / (double)solver.max_literals);
-    printf("c backtracks            : %-12"PRIu64"   (NCB %0.f%% , CB %0.f%%)\n", solver.non_chrono_backtrack + solver.chrono_backtrack, (solver.non_chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack), (solver.chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack));
+    printf("c restarts              : %"  PRIu64  "\n", solver.starts);
+    printf("c duplicate learnts_cnf : %" PRIu64 "\n", solver.duplicates_added_conflicts);
+    printf("c duplicate learnts_min : %" PRIu64 "\n", solver.duplicates_added_minimization);
+    printf("c conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
+    printf("c decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
+    printf("c propagations          : %-12" PRIu64 "   (%.0f /sec)\n", solver.propagations, solver.propagations/cpu_time);
+    printf("c conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", solver.tot_literals, (solver.max_literals - solver.tot_literals)*100 / (double)solver.max_literals);
+    printf("c backtracks            : %-12" PRIu64 "   (NCB %0.f%% , CB %0.f%%)\n", solver.non_chrono_backtrack + solver.chrono_backtrack, (solver.non_chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack), (solver.chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack));
     if (mem_used != 0) printf("c Memory used           : %.2f MB\n", mem_used);
     printf("c CPU time              : %g s\n", cpu_time);
 }
@@ -66,7 +66,7 @@ void printStats(Solver& solver)
 static Solver* solver;
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
-static void SIGINT_interrupt(int signum) { solver->interrupt(); }
+static void SIGINT_interrupt(int signum) { solver->print_size(std::cout);exit(-1);solver->interrupt(); }
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
 // destructors and may cause deadlocks if a malloc/free function happens to be running (these
@@ -82,6 +82,9 @@ static void SIGINT_exit(int signum) {
 //=================================================================================================
 // Main:
 
+std::chrono::nanoseconds Minisat::total_work_time;
+decltype(std::chrono::steady_clock::now()) Minisat::program_start_time;
+decltype(std::chrono::steady_clock::now()) Minisat::program_end_time;
 int main(int argc, char** argv)
 {
     try {
@@ -104,7 +107,7 @@ int main(int argc, char** argv)
         StringOption drup_file("MAIN", "drup-file", "DRUP UNSAT proof ouput file.", "");
 
         parseOptions(argc, argv, true);
-        
+        program_start_time=std::chrono::steady_clock::now();
         SimpSolver  S;
         double      initial_time = cpuTime();
 
@@ -161,6 +164,9 @@ int main(int argc, char** argv)
         
         parse_DIMACS(in, S);
         gzclose(in);
+        std::cout<<"\n\n start parsing \n\n";
+        S.print_size(std::cout);
+        std::cout<<"\n\n end parsing \n\n";
         FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : NULL;
 
         if (S.verbosity > 0){
@@ -213,7 +219,9 @@ int main(int argc, char** argv)
 
         vec<Lit> dummy;
         lbool ret = S.solveLimited(dummy);
-        
+        program_end_time=std::chrono::steady_clock::now();
+        total_work_time=program_end_time-program_start_time;
+        S.print_size(std::cout);
         if (S.verbosity > 0){
             printStats(S);
             printf("\n"); }

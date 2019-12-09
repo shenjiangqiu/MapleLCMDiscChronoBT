@@ -316,7 +316,14 @@ class OccLists
 
 public:
     OccLists(const Deleted& d) : deleted(d) {}
-    
+    unsigned int size(){
+        auto m_size=0;
+        for(int i=0;i<occs.size();i++){
+            m_size+=occs[i].size();
+        }
+        
+        return m_size;
+    }
     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
     // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }

@@ -36,8 +36,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "mtl/Sort.h"
 #include "core/Solver.h"
-
+#include<chrono>
 using namespace Minisat;
+extern unsigned long long total_solve_time;
+extern unsigned long long propagation_time;
 
 //#define PRINT_OUT
 
@@ -992,7 +994,7 @@ bool Solver::addClause_(vec<Lit>& ps)
         fprintf(drup_file, "0\n");
 #endif
     }
-
+    
     if (ps.size() == 0)
         return ok = false;
     else if (ps.size() == 1){
@@ -1000,6 +1002,8 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = (propagate() == CRef_Undef);
     }else{
         CRef cr = ca.alloc(ps, false);
+        //auto ca_size=ca.size();
+        //printf("ca size:%d\n",ca_size);
         clauses.push(cr);
         attachClause(cr);
     }
@@ -1531,26 +1535,33 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
-CRef Solver::propagate()
+CRef Solver::propagate_()
 {
+    //auto start_time=std::chrono::steady_clock::now();
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
     watches_bin.cleanAll();
-
+    
     while (qhead < trail.size()){
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         int currLevel = level(var(p));
         vec<Watcher>&  ws  = watches[p];
+        //std::cout<<"size of ws: "<<watches.size()<<"\n";
+
         Watcher        *i, *j, *end;
         num_props++;
 
         vec<Watcher>& ws_bin = watches_bin[p];  // Propagate binary clauses first.
+        //std::cout<<"size of ws_bin: "<<watches_bin.size()<<"\n";
         for (int k = 0; k < ws_bin.size(); k++){
             Lit the_other = ws_bin[k].blocker;
             if (value(the_other) == l_False){
                 confl = ws_bin[k].cref;
+                //auto end_time=std::chrono::steady_clock::now();
+                //auto duration=end_time-start_time;
 #ifdef LOOSE_PROP_STAT
+
                 return confl;
 #else
                 goto ExitProp;
@@ -1563,15 +1574,19 @@ CRef Solver::propagate()
 #endif                
 			}
         }
-
+        total_Watchers+=ws.size();
+        total_indexs++;
+        //int count=0;
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
             // Try to avoid inspecting the clause:
+            //count++;
             Lit blocker = i->blocker;
             if (value(blocker) == l_True){
                 *j++ = *i++; continue; }
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
+            //std::cout<<"cr: "<<cr<<"\n";
             Clause&  c         = ca[cr];
             Lit      false_lit = ~p;
             if (c[0] == false_lit)
@@ -1595,9 +1610,14 @@ CRef Solver::propagate()
             // Did not find watch -- clause is unit under assignment:
             *j++ = w;
             if (value(first) == l_False){
+                time_find_conflict++;
+                total_find_conflict_length+=i-(Watcher*)ws;
+                total_find_conflict_allsize+=ws.size();
+                //std::cout<<"count: "<<count<<", length: "<<i-ws<<"\n";
                 confl = cr;
                 qhead = trail.size();
                 // Copy the remaining watches:
+
                 while (i < end)
                     *j++ = *i++;
             }else
@@ -2162,7 +2182,7 @@ uint32_t Solver::reduceduplicates(){
             for (auto &in_in_mp: inner_mp.second){
                 if (in_in_mp.second >= 2){
                 //min_number_of_learnts_copies
-                    tmp.push_back({outer_mp.first,inner_mp.first,in_in_mp.first,in_in_mp.second});
+                    tmp.push_back({(uint64_t) outer_mp.first,inner_mp.first,in_in_mp.first,in_in_mp.second});
                 }
             }                    
          }
