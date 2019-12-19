@@ -1523,7 +1523,9 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
     trail.push_(p);
 }
 
-
+unsigned number_watch_changed_total=0;
+unsigned number_clause_read_total=0;
+unsigned times_only_access_watch=0;
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -1575,20 +1577,28 @@ CRef Solver::propagate_()
 			}
         }
         total_Watchers+=ws.size();
-        total_indexs++;
+        total_indexs++;//number of rounds
         //int count=0;
+        bool no_clause_access=true;
+        bool no_implication_added=true;
+        bool no_change_other_watch=true;
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
             // Try to avoid inspecting the clause:
             //count++;
             Lit blocker = i->blocker;
+            total_access_watches++;
             if (value(blocker) == l_True){
-                *j++ = *i++; continue; }
+                
+                *j++ = *i++; continue; }//no clause accessed
 
             // Make sure the false literal is data[1]:
+            no_clause_access=false;
+            total_clause_access_times++;
             CRef     cr        = i->cref;
             //std::cout<<"cr: "<<cr<<"\n";
             Clause&  c         = ca[cr];
             Lit      false_lit = ~p;
+            total_clause_access_size+=2;
             if (c[0] == false_lit)
                 c[0] = c[1], c[1] = false_lit;
             assert(c[1] == false_lit);
@@ -1602,10 +1612,15 @@ CRef Solver::propagate_()
 
             // Look for new watch:
             for (int k = 2; k < c.size(); k++)
+            {
+                total_clause_access_size++;
                 if (value(c[k]) != l_False){
                     c[1] = c[k]; c[k] = false_lit;
+                    total_change_other_watch++;
+                    no_change_other_watch=false;
                     watches[~c[1]].push(w);
                     goto NextClause; }
+            }
 
             // Did not find watch -- clause is unit under assignment:
             *j++ = w;
@@ -1621,7 +1636,9 @@ CRef Solver::propagate_()
                 while (i < end)
                     *j++ = *i++;
             }else
-            {
+            {//new implecate
+                no_implication_added=false;
+                total_push_new_implication++;
 				if (currLevel == decisionLevel())
 				{
 					uncheckedEnqueue(first, currLevel, cr);
@@ -1648,6 +1665,8 @@ CRef Solver::propagate_()
 					{
 						std::swap(c[1], c[nMaxInd]);
 						*j--; // undo last watch
+                        total_change_other_watch++;
+                        no_change_other_watch=false;
 						watches[~c[1]].push(w);
 					}
 					
@@ -1659,6 +1678,16 @@ CRef Solver::propagate_()
 			}
 
 NextClause:;
+        }
+        //after process all watches, I need to decide if this round of propagation change the assignment queue, or access clause.
+        if(no_clause_access==true){
+            total_no_clause_access++;
+        }
+        if(no_implication_added==true){
+            total_no_implication_added++;
+        }
+        if(no_change_other_watch==true){
+            total_no_change_other_watch++;
         }
         ws.shrink(i - j);
     }

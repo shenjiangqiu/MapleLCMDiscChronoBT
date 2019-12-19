@@ -132,13 +132,37 @@ public:
         os << "total_find_conflict_allsize: " << total_find_conflict_allsize << "\n";
         os << "total_propagation_time: " << total_duration.count() << "\n";
         os << "total_work_time: "<< total_work_time.count()<<"\n";
+        
+        os<<"times_only_access_watches: "<<times_only_access_watches<<"\n";
+        os<<"total_watch_access: "<<total_watch_access<<"\n";
+        os<<"total_clause_access_times: "<<total_clause_access_times<<"\n";
+        os<<"total_clause_access_size: "<<total_clause_access_size<<"\n";
+        os<<"total_change_other_watch: "<<total_change_other_watch<<"\n";
+        os<<"total_push_new_implication: "<<total_push_new_implication<<"\n";
+        os<<"total_no_clause_access: "<<total_no_clause_access<<"\n";
+        os<<"total_no_implication_added: "<<total_no_implication_added<<"\n";
+        os<<"total_no_change_other_watch: "<<total_no_change_other_watch<<"\n";
     }
-    unsigned long long total_Watchers = 0;
-    unsigned long long total_act_watchers = 0;
-    unsigned long long total_indexs = 0;
-    unsigned long long time_find_conflict = 0;
-    unsigned long long total_find_conflict_length = 0;
-    unsigned long long total_find_conflict_allsize = 0;
+    using ull=unsigned long long;
+    ull total_Watchers = 0;
+    ull total_act_watchers = 0;
+    ull total_indexs = 0;
+    ull time_find_conflict = 0;
+    ull total_find_conflict_length = 0;
+    ull total_find_conflict_allsize = 0;
+    ull total_access_clause=0;
+    ull total_access_watches=0;
+
+    ull times_only_access_watches=0;
+    ull total_watch_access=0;
+    ull total_clause_access_times=0;
+    ull total_clause_access_size=0;
+    ull total_change_other_watch=0;
+    ull total_push_new_implication=0;
+    ull total_no_clause_access=0;
+    ull total_no_implication_added=0;
+    ull total_no_change_other_watch=0;
+
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
