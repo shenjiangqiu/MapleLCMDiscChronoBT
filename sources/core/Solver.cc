@@ -33,6 +33,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 #include <signal.h>
 #include <unistd.h>
+#include "simp/sim_api.h"
 
 #include "mtl/Sort.h"
 #include "core/Solver.h"
@@ -530,7 +531,9 @@ bool Solver::simplifyLearnt_x(vec<CRef>& learnts_x)
                 if (c.size() == 1){
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
+        
                     if (propagate() != CRef_Undef){
+  
                         ok = false;
                         return false;
                     }
@@ -661,6 +664,8 @@ bool Solver::simplifyLearnt_core()
                 if (c.size() == 1){
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
+
+
                     if (propagate() != CRef_Undef){
                         ok = false;
                         return false;
@@ -828,6 +833,8 @@ bool Solver::simplifyLearnt_tier2()
                 if (c.size() == 1){
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
+
+
                     if (propagate() != CRef_Undef){
                         ok = false;
                         return false;
@@ -895,6 +902,7 @@ bool Solver::simplifyAll()
 {
     ////
     simplified_length_record = original_length_record = 0;
+
 
     if (!ok || propagate() != CRef_Undef)
         return ok = false;
@@ -1533,6 +1541,7 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate()
 {
+    
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
@@ -1547,9 +1556,11 @@ CRef Solver::propagate()
 
         vec<Watcher>& ws_bin = watches_bin[p];  // Propagate binary clauses first.
         for (int k = 0; k < ws_bin.size(); k++){
+            SimMarker(1,1);
             Lit the_other = ws_bin[k].blocker;
             if (value(the_other) == l_False){
                 confl = ws_bin[k].cref;
+                SimMarker(2,1);
 #ifdef LOOSE_PROP_STAT
                 return confl;
 #else
@@ -1558,6 +1569,7 @@ CRef Solver::propagate()
             }else if(value(the_other) == l_Undef)
             {
                 uncheckedEnqueue(the_other, currLevel, ws_bin[k].cref);
+                SimMarker(2,1);
 #ifdef  PRINT_OUT                
                 std::cout << "i " << the_other << " l " << currLevel << "\n";
 #endif                
@@ -1566,12 +1578,18 @@ CRef Solver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
             // Try to avoid inspecting the clause:
+            SimMarker(1,1);
             Lit blocker = i->blocker;
             if (value(blocker) == l_True){
-                *j++ = *i++; continue; }
+
+                *j++ = *i++;
+                SimMarker(2,1);
+                 continue; }
 
             // Make sure the false literal is data[1]:
+            SimMarker(1,1);
             CRef     cr        = i->cref;
+            SimMarker(1,2);
             Clause&  c         = ca[cr];
             Lit      false_lit = ~p;
             if (c[0] == false_lit)
@@ -1583,25 +1601,39 @@ CRef Solver::propagate()
             Lit     first = c[0];
             Watcher w     = Watcher(cr, first);
             if (first != blocker && value(first) == l_True){
-                *j++ = w; continue; }
+                SimMarker(1,1);
+                *j++ = w; 
+                SimMarker(2,1);
+                continue; }
 
             // Look for new watch:
+            SimMarker(2,1);
             for (int k = 2; k < c.size(); k++)
+            {
+                SimMarker(1,2);
                 if (value(c[k]) != l_False){
                     c[1] = c[k]; c[k] = false_lit;
+                    SimMarker(1,1);
                     watches[~c[1]].push(w);
+                    SimMarker(2,1);
                     goto NextClause; }
-
+                
+            }
             // Did not find watch -- clause is unit under assignment:
+            SimMarker(1,1);//wathcher
             *j++ = w;
+            SimMarker(2,1);
             if (value(first) == l_False){
                 confl = cr;
                 qhead = trail.size();
                 // Copy the remaining watches:
+                SimMarker(1,1);
                 while (i < end)
                     *j++ = *i++;
+                SimMarker(2,1);
             }else
             {
+                SimMarker(2,1);//turn off;
 				if (currLevel == decisionLevel())
 				{
 					uncheckedEnqueue(first, currLevel, cr);
@@ -1616,7 +1648,9 @@ CRef Solver::propagate()
 					// pass over all the literals in the clause and find the one with the biggest level
 					for (int nInd = 2; nInd < c.size(); ++nInd)
 					{
+                        SimMarker(1,2);
 						int nLevel = level(var(c[nInd]));
+                        SimMarker(2,1);
 						if (nLevel > nMaxLevel)
 						{
 							nMaxLevel = nLevel;
@@ -1626,9 +1660,11 @@ CRef Solver::propagate()
 
 					if (nMaxInd != 1)
 					{
+                        SimMarker(1,2);
 						std::swap(c[1], c[nMaxInd]);
 						*j--; // undo last watch
 						watches[~c[1]].push(w);
+                        SimMarker(2,1);
 					}
 					
 					uncheckedEnqueue(first, nMaxLevel, cr);
@@ -1934,8 +1970,9 @@ lbool Solver::search(int& nof_conflicts)
     }
 
     for (;;){
+        SimRoiStart();
         CRef confl = propagate();
-
+        SimRoiEnd();
         if (confl != CRef_Undef){
             // CONFLICT
             if (VSIDS){
