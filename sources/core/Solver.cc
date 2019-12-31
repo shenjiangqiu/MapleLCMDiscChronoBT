@@ -1972,7 +1972,7 @@ lbool Solver::search(int& nof_conflicts)
     for (;;){
         SimRoiStart();
         CRef confl = propagate();
-        SimRoiEnd();
+        
         if (confl != CRef_Undef){
             // CONFLICT
             if (VSIDS){
