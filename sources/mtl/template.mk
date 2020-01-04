@@ -22,7 +22,6 @@ CXX       ?= g++
 CFLAGS    ?= -Wall -Wno-parentheses -std=c++11
 LFLAGS    ?= -Wall
 
-COPTIMIZE ?= -O3
 
 CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
 LFLAGS    += -lz
@@ -44,7 +43,7 @@ libr:	lib$(LIB)_release.a
 %.o:			CFLAGS +=$(COPTIMIZE) -g -D DEBUG
 %.op:			CFLAGS +=$(COPTIMIZE) -pg -g -D NDEBUG
 %.od:			CFLAGS +=-O0 -g -D DEBUG
-%.or:			CFLAGS +=$(COPTIMIZE) -g -D NDEBUG
+%.or:			CFLAGS +=$(COPTIMIZE) -g -D NDEBUG -O3
 
 ## Link options
 $(EXEC):		LFLAGS += -g

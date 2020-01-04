@@ -29,7 +29,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Sort.h"
 #include "simp/SimpSolver.h"
 #include "utils/System.h"
-
+#include "simp/sim_api.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -249,7 +249,9 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         updateElimHeap(var(l));
     }
 
-    return c.size() == 1 ? enqueue(c[0]) && propagate() == CRef_Undef : true;
+    auto cons=c.size() == 1 ? enqueue(c[0]) && propagate() == CRef_Undef : true;
+    SimMarker(4,0);
+    return cons;
 }
 
 

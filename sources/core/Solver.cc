@@ -531,12 +531,13 @@ bool Solver::simplifyLearnt_x(vec<CRef>& learnts_x)
                 if (c.size() == 1){
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
-        
+                    SimMarker(4,0);
                     if (propagate() != CRef_Undef){
   
                         ok = false;
                         return false;
                     }
+                    SimMarker(4,0);
                     // delete the clause memory in logic
                     c.mark(1);
                     ca.free(cr);
@@ -665,11 +666,13 @@ bool Solver::simplifyLearnt_core()
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
 
-
+                    SimMarker(4,0);
                     if (propagate() != CRef_Undef){
+                        SimMarker(4,0);
                         ok = false;
                         return false;
                     }
+                    SimMarker(4,0);
                     // delete the clause memory in logic
                     c.mark(1);
                     ca.free(cr);
@@ -834,8 +837,9 @@ bool Solver::simplifyLearnt_tier2()
                     // when unit clause occur, enqueue and propagate
                     uncheckedEnqueue(c[0]);
 
-
+                    SimMarker(4,0);
                     if (propagate() != CRef_Undef){
+                        SimMarker(4,0);
                         ok = false;
                         return false;
                     }
@@ -903,10 +907,12 @@ bool Solver::simplifyAll()
     ////
     simplified_length_record = original_length_record = 0;
 
-
+    SimMarker(4,0);
     if (!ok || propagate() != CRef_Undef)
+    {
+        SimMarker(4, 0);
         return ok = false;
-
+    }
     //// cleanLearnts(also can delete these code), here just for analyzing
     //if (local_learnts_dirty) cleanLearnts(learnts_local, LOCAL);
     //if (tier2_learnts_dirty) cleanLearnts(learnts_tier2, TIER2);
@@ -1005,7 +1011,9 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        return ok = (propagate() == CRef_Undef);
+        ok = (propagate() == CRef_Undef);
+        SimMarker(4,0);
+        return ok;
     }else{
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
@@ -1546,8 +1554,9 @@ CRef Solver::propagate()
     int     num_props = 0;
     watches.cleanAll();
     watches_bin.cleanAll();
-
-    while (qhead < trail.size()){
+    SimMarker(3,1);
+    while (qhead < trail.size()){//1
+        SimMarker(4,0);
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         int currLevel = level(var(p));
         vec<Watcher>&  ws  = watches[p];
@@ -1555,36 +1564,50 @@ CRef Solver::propagate()
         num_props++;
 
         vec<Watcher>& ws_bin = watches_bin[p];  // Propagate binary clauses first.
-        for (int k = 0; k < ws_bin.size(); k++){
+        SimMarker(3,2);
+        for (int k = 0; k < ws_bin.size(); k++){//2
+            SimMarker(4,0);
             SimMarker(1,1);
             Lit the_other = ws_bin[k].blocker;
-            if (value(the_other) == l_False){
+            SimMarker(3,3);
+            if (value(the_other) == l_False){//3
+                SimMarker(4,0);
                 confl = ws_bin[k].cref;
                 SimMarker(2,1);
-#ifdef LOOSE_PROP_STAT
+                SimMarker(4,0);
+                #ifdef LOOSE_PROP_STAT
                 return confl;
-#else
+                #else
                 goto ExitProp;
-#endif
+                #endif
             }else if(value(the_other) == l_Undef)
             {
                 uncheckedEnqueue(the_other, currLevel, ws_bin[k].cref);
                 SimMarker(2,1);
-#ifdef  PRINT_OUT                
+                #ifdef  PRINT_OUT                
                 std::cout << "i " << the_other << " l " << currLevel << "\n";
-#endif                
+                #endif                
 			}
+            SimMarker(4,0);
+            SimMarker(3,2);
         }
-
-        for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
+        SimMarker(4,0);
+        SimMarker(3,4);
+        for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){//4
             // Try to avoid inspecting the clause:
+            SimMarker(4,0);
             SimMarker(1,1);
             Lit blocker = i->blocker;
-            if (value(blocker) == l_True){
-
+            SimMarker(3,5);
+            if (value(blocker) == l_True)
+            { //5
+                SimMarker(4, 0);
                 *j++ = *i++;
-                SimMarker(2,1);
-                 continue; }
+                SimMarker(2, 1);
+                SimMarker(3,4);
+                continue;
+            }
+            SimMarker(4, 0);
 
             // Make sure the false literal is data[1]:
             SimMarker(1,1);
@@ -1592,38 +1615,60 @@ CRef Solver::propagate()
             SimMarker(1,2);
             Clause&  c         = ca[cr];
             Lit      false_lit = ~p;
-            if (c[0] == false_lit)
+            SimMarker(3,6);
+            if (c[0] == false_lit)//6
                 c[0] = c[1], c[1] = false_lit;
+            SimMarker(4,0);
             assert(c[1] == false_lit);
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
             Lit     first = c[0];
             Watcher w     = Watcher(cr, first);
-            if (first != blocker && value(first) == l_True){
-                SimMarker(1,1);
-                *j++ = w; 
-                SimMarker(2,1);
-                continue; }
+            SimMarker(3,7);
+            if (first != blocker && value(first) == l_True)
+            { //7
+                SimMarker(4, 0);
+                SimMarker(1, 1);
+                *j++ = w;
+                SimMarker(2, 1);
+                SimMarker(3,4);
+                continue;
+            }
+            SimMarker(4, 0);
 
             // Look for new watch:
             SimMarker(2,1);
-            for (int k = 2; k < c.size(); k++)
+            SimMarker(3,8);
+            for (int k = 2; k < c.size(); k++)//8
             {
-                SimMarker(1,2);
-                if (value(c[k]) != l_False){
-                    c[1] = c[k]; c[k] = false_lit;
-                    SimMarker(1,1);
+                SimMarker(4,0);
+                SimMarker(1, 2);
+                SimMarker(3, 9);
+                if (value(c[k]) != l_False)
+                {
+                    SimMarker(4, 0);
+                    c[1] = c[k];
+                    c[k] = false_lit;
+                    SimMarker(1, 1);
                     watches[~c[1]].push(w);
-                    SimMarker(2,1);
-                    goto NextClause; }
+                    SimMarker(2, 1);
+                    SimMarker(4, 0);
+
+                    goto NextClause;
+                }
+                SimMarker(4, 0);
+                SimMarker(3,8);
                 
             }
+            SimMarker(4,0);
             // Did not find watch -- clause is unit under assignment:
             SimMarker(1,1);//wathcher
             *j++ = w;
             SimMarker(2,1);
-            if (value(first) == l_False){
+            SimMarker(3,9);
+            if (value(first) == l_False){///9
+                SimMarker(4,0);
                 confl = cr;
                 qhead = trail.size();
                 // Copy the remaining watches:
@@ -1633,53 +1678,74 @@ CRef Solver::propagate()
                 SimMarker(2,1);
             }else
             {
+                SimMarker(4,0);
                 SimMarker(2,1);//turn off;
-				if (currLevel == decisionLevel())
+                SimMarker(3,10);
+
+				if (currLevel == decisionLevel())//10
 				{
+                    SimMarker(4,0);
 					uncheckedEnqueue(first, currLevel, cr);
-#ifdef PRINT_OUT					
+                    #ifdef PRINT_OUT					
 					std::cout << "i " << first << " l " << currLevel << "\n";
-#endif					
+                    #endif					
 				}
 				else
 				{
+                    SimMarker(4,0);
 					int nMaxLevel = currLevel;
 					int nMaxInd = 1;
 					// pass over all the literals in the clause and find the one with the biggest level
-					for (int nInd = 2; nInd < c.size(); ++nInd)
+                    SimMarker(3,11);
+
+					for (int nInd = 2; nInd < c.size(); ++nInd)//11
 					{
+                        SimMarker(4,0);
                         SimMarker(1,2);
 						int nLevel = level(var(c[nInd]));
                         SimMarker(2,1);
-						if (nLevel > nMaxLevel)
+                        SimMarker(3,12);
+						if (nLevel > nMaxLevel)//12
 						{
+                            
 							nMaxLevel = nLevel;
 							nMaxInd = nInd;
 						}
+                        
+                        SimMarker(3,11);
 					}
-
-					if (nMaxInd != 1)
+                  
+                    SimMarker(3,13);
+					if (nMaxInd != 1)//13
 					{
+                        SimMarker(4,0);
                         SimMarker(1,2);
 						std::swap(c[1], c[nMaxInd]);
 						*j--; // undo last watch
 						watches[~c[1]].push(w);
                         SimMarker(2,1);
 					}
+                    SimMarker(4,0);
 					
 					uncheckedEnqueue(first, nMaxLevel, cr);
-#ifdef PRINT_OUT					
+                    #ifdef PRINT_OUT					
 					std::cout << "i " << first << " l " << nMaxLevel << "\n";
-#endif	
+                    #endif	
 				}
+                SimMarker(4,0);
 			}
+            SimMarker(4,0);
 
-NextClause:;
+            NextClause:;
+            SimMarker(3, 4);
         }
+        SimMarker(4, 0);
         ws.shrink(i - j);
+        SimMarker(3, 1);
     }
 
 ExitProp:;
+    SimMarker(4,0);
     propagations += num_props;
     simpDB_props -= num_props;
 
@@ -1795,7 +1861,10 @@ bool Solver::simplify()
     assert(decisionLevel() == 0);
 
     if (!ok || propagate() != CRef_Undef)
+    {
+        ok = (propagate() == CRef_Undef);
         return ok = false;
+    }
 
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
         return true;
@@ -1926,6 +1995,7 @@ CRef Solver::propagateLits(vec<Lit>& lits) {
             newDecisionLevel();
             uncheckedEnqueue(lit);
             CRef confl = propagate();
+            SimMarker(4,0);
             if (confl != CRef_Undef) {
                 return confl;
             }
@@ -1972,7 +2042,7 @@ lbool Solver::search(int& nof_conflicts)
     for (;;){
         SimRoiStart();
         CRef confl = propagate();
-        
+        SimMarker(4,0);
         if (confl != CRef_Undef){
             // CONFLICT
             if (VSIDS){
