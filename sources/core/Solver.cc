@@ -1645,7 +1645,7 @@ CRef Solver::propagate()
                 SimMarker(4,0);
                 SimMarker(1, 2);
                 SimMarker(3, 9);
-                if (value(c[k]) != l_False)
+                if (value(c[k]) != l_False)//9
                 {
                     SimMarker(4, 0);
                     c[1] = c[k];
@@ -1666,8 +1666,8 @@ CRef Solver::propagate()
             SimMarker(1,1);//wathcher
             *j++ = w;
             SimMarker(2,1);
-            SimMarker(3,9);
-            if (value(first) == l_False){///9
+            SimMarker(3,10);
+            if (value(first) == l_False){///10
                 SimMarker(4,0);
                 confl = cr;
                 qhead = trail.size();
@@ -1680,9 +1680,9 @@ CRef Solver::propagate()
             {
                 SimMarker(4,0);
                 SimMarker(2,1);//turn off;
-                SimMarker(3,10);
+                SimMarker(3,11);
 
-				if (currLevel == decisionLevel())//10
+				if (currLevel == decisionLevel())//11
 				{
                     SimMarker(4,0);
 					uncheckedEnqueue(first, currLevel, cr);
@@ -1696,27 +1696,27 @@ CRef Solver::propagate()
 					int nMaxLevel = currLevel;
 					int nMaxInd = 1;
 					// pass over all the literals in the clause and find the one with the biggest level
-                    SimMarker(3,11);
+                    SimMarker(3,12);
 
-					for (int nInd = 2; nInd < c.size(); ++nInd)//11
+					for (int nInd = 2; nInd < c.size(); ++nInd)//12
 					{
                         SimMarker(4,0);
                         SimMarker(1,2);
 						int nLevel = level(var(c[nInd]));
                         SimMarker(2,1);
-                        SimMarker(3,12);
-						if (nLevel > nMaxLevel)//12
+                        SimMarker(3,13);
+						if (nLevel > nMaxLevel)//13
 						{
                             
 							nMaxLevel = nLevel;
 							nMaxInd = nInd;
 						}
                         
-                        SimMarker(3,11);
+                        SimMarker(3,12);
 					}
                   
-                    SimMarker(3,13);
-					if (nMaxInd != 1)//13
+                    SimMarker(3,14);
+					if (nMaxInd != 1)//14
 					{
                         SimMarker(4,0);
                         SimMarker(1,2);
