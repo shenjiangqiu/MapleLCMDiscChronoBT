@@ -1549,6 +1549,7 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate()
 {
+    SimRoiStart();
     
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
@@ -1575,6 +1576,7 @@ CRef Solver::propagate()
                 confl = ws_bin[k].cref;
                 SimMarker(2,1);
                 SimMarker(4,0);
+                SimRoiEnd();
                 #ifdef LOOSE_PROP_STAT
                 return confl;
                 #else
@@ -1748,7 +1750,6 @@ ExitProp:;
     SimMarker(4,0);
     propagations += num_props;
     simpDB_props -= num_props;
-
     return confl;
 }
 
