@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.cu": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "*.tcc": "cpp",
+        "optional": "cpp",
+        "system_error": "cpp"
+    }
+}
