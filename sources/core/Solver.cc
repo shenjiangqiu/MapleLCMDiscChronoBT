@@ -36,7 +36,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "mtl/Sort.h"
 #include "core/Solver.h"
-
+#include "core/Solver_define.h"
 using namespace Minisat;
 
 //#define PRINT_OUT
@@ -81,6 +81,7 @@ static IntOption     opt_VSIDS_props_limit ("DUP-LEARNTS", "VSIDS-lim",  "specif
 //=================================================================================================
 // Constructor/Destructor:
 
+const int num_prefetched=4;
 
 Solver::Solver() :
 
@@ -1494,11 +1495,31 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     seen[var(p)] = 0;
 }
 
-
 void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
 {
     assert(value(p) == l_Undef);
     Var x = var(p);
+    auto&  ws  = watches[p];
+    auto size=ws.size();
+    const int stride=64/8;
+   
+    #ifdef PREFETCH_WATHER_LIST
+    for (int i = 0; i <wather_prefetch_stride*wather_prefetch_num ; i+=wather_prefetch_stride)
+    {
+        __builtin_prefetch(&(ws[i]), 0, 0);
+    }
+    #endif
+    #ifdef PREFETCH_CLAUSE_0
+    //if we want to prefetch clause, we need first to read the watcher list
+    for (int i = 0; i < clause_prefetch_num;  i++)
+    {
+        if (i<ws.size() and value(ws[i].blocker) != l_True )
+        {
+            __builtin_prefetch(ca.lea(ws[i].cref), 0, 0);
+        }
+    }
+    #endif
+
     if (!VSIDS){
         picked[x] = conflicts;
         conflicted[x] = 0;
@@ -1566,6 +1587,22 @@ CRef Solver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
             // Try to avoid inspecting the clause:
+            #if defined(PREFETCH_WATHER_LIST)  
+            if((i-(Watcher*)ws) % 8==0 && i+8*num_prefetched<end){//every 8 wathers
+                #ifdef PREFETCH_WATHER_LIST
+    
+                __builtin_prefetch(i+8*num_prefetched, 0, 0);//prefetch the next un_prefetch cache_line
+            
+                #endif
+            }
+            #endif
+            #if defined(PREFETCH_CLAUSE_0)
+            if (i+clause_prefetch_num<end and value((i + clause_prefetch_num)->blocker) != l_True)//every wathers
+            {
+                __builtin_prefetch(ca.lea((i + clause_prefetch_num)->cref), 0, 0);
+            }
+            #endif
+
             Lit blocker = i->blocker;
             if (value(blocker) == l_True){
                 *j++ = *i++; continue; }

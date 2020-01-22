@@ -65,6 +65,7 @@ static void SIGINT_interrupt(int signum) { solver->interrupt(); }
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n"); printf("c *** INTERRUPTED ***\n");
+    printStats(*solver);
     if (solver->verbosity > 0){
         printStats(*solver);
         printf("\n"); printf("c *** INTERRUPTED ***\n"); }
