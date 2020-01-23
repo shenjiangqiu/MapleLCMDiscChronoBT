@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include <errno.h>
-
+#include<simp/sim_api.h>
 #include <signal.h>
 #include <zlib.h>
 #include <sys/resource.h>
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
         // voluntarily:
         signal(SIGINT, SIGINT_exit);
         signal(SIGXCPU,SIGINT_exit);
-
+        SimRoiStart();
         S.parsing = false;
         S.eliminate(true);
         double simplified_time = cpuTime();

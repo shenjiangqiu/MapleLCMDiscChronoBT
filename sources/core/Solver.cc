@@ -36,9 +36,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "mtl/Sort.h"
 #include "core/Solver.h"
-
+#include "simp/sim_api.h"
 using namespace Minisat;
-
+unsigned long long clause_start=0;
+unsigned long long clause_end=0;
+unsigned long long wather_start=0;
+unsigned long long wather_end=0;
 //#define PRINT_OUT
 
 #ifdef BIN_DRUP

@@ -23,7 +23,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "mtl/XAlloc.h"
 #include "mtl/Vec.h"
-
+#include "simp/sim_api.h"
+#include<iostream>
 namespace Minisat {
 
 //=================================================================================================
@@ -103,6 +104,22 @@ void RegionAllocator<T>::capacity(uint32_t min_cap)
 
     assert(cap > 0);
     memory = (T*)xrealloc(memory, sizeof(T)*cap);
+    unsigned long long start=reinterpret_cast<unsigned long long>(memory);
+    unsigned long long end= start+sizeof(T)*cap;
+    std::cout<<"start:"<<start<<std::endl;
+    std::cout<<"end:"<<end<<std::endl;
+
+    SimMarker(3335,0);
+    SimMarker(3333,start);
+    SimMarker(3333,end);
+    SimMarker(3334,1);
+
+
+    //1, clear all ranges
+    //2, add new ranges for both clause and wather list!
+    //3, so we need a global variable to record both clause address and size and those for wathers'
+    
+
 }
 
 
